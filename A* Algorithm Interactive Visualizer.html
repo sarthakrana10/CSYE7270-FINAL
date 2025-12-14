@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A* Pathfinding</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 1000px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        .mode-select {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f0f0f0;
+            border-radius: 10px;
+        }
+        
+        .mode-select label {
+            margin-right: 20px;
+            font-weight: bold;
+        }
+        
+        .mode-select input[type="radio"] {
+            margin-right: 5px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        
+        .btn-success {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #38a169;
+        }
+        
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #e53e3e;
+        }
+        
+        .canvas-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        canvas {
+            border: 3px solid #333;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .legend {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        
+        .legend-hex {
+            width: 25px;
+            height: 25px;
+            clip-path: polygon(30% 0%, 70% 0%, 100% 50%, 70% 100%, 30% 100%, 0% 50%);
+            border: 2px solid #333;
+        }
+        
+        .instructions {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .instructions h3 {
+            color: #1565c0;
+            margin-bottom: 10px;
+        }
+        
+        .instructions ol {
+            margin-left: 20px;
+            color: #1565c0;
+        }
+        
+        .instructions li {
+            margin-bottom: 5px;
+        }
+        
+        .cost-legend {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        
+        .cost-legend h3 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        
+        .cost-legend p {
+            color: #856404;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>A* Pathfinding</h1>
+        <p class="subtitle">Exploring the A* algorithm step-by-step</p>
+    
+        
+        <div class="mode-select">
+            <label><input type="radio" name="mode" value="start" checked> Set Start</label>
+            <label><input type="radio" name="mode" value="goal"> Set Goal</label>
+            <label><input type="radio" name="mode" value="wall"> Add Walls</label>
+        </div>
+        
+        <div class="controls">
+            <button class="btn-success" onclick="nextStep()">Next Step</button>
+            <button class="btn-primary" onclick="autoSolve()">Auto Solve</button>
+            <button class="btn-danger" onclick="reset()">Reset</button>
+        </div>
+        
+        <div class="canvas-container">
+            <canvas id="hexCanvas" width="800" height="700"></canvas>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-hex" style="background: #4CAF50;"></div>
+                <span><strong>Start</strong></span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-hex" style="background: #f44336;"></div>
+                <span><strong>Goal</strong></span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-hex" style="background: #333;"></div>
+                <span><strong>Wall</strong></span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-hex" style="background: #90cdf4;"></div>
+                <span><strong>Open List</strong></span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-hex" style="background: #fbb6ce;"></div>
+                <span><strong>Closed List</strong></span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-hex" style="background: #ffd700;"></div>
+                <span><strong>Path</strong></span>
+            </div>
+        </div>
+        
+
+    </div>
+
+    <script>
+        const canvas = document.getElementById('hexCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Hex grid settings
+        const HEX_RADIUS = 35;
+        const HEX_WIDTH = Math.sqrt(3) * HEX_RADIUS;
+        const HEX_HEIGHT = 2 * HEX_RADIUS;
+        const COLS = 8;
+        const ROWS = 8;
+        
+        // Grid state
+        let hexGrid = [];
+        let startHex = null;
+        let goalHex = null;
+        let openList = [];
+        let closedList = new Set();
+        let pathFound = false;
+        
+        // Hex class
+        class Hex {
+            constructor(q, r) {
+                this.q = q; // Column
+                this.r = r; // Row
+                this.x = 0;
+                this.y = 0;
+                this.type = 'empty'; // empty, wall, start, goal, open, closed, path
+                this.g = Infinity;
+                this.h = 0;
+                this.f = Infinity;
+                this.parent = null;
+                this.calculatePosition();
+            }
+            
+            calculatePosition() {
+                const xOffset = 70;
+                const yOffset = 70;
+                this.x = HEX_WIDTH * (this.q + this.r * 0.5) + xOffset;
+                this.y = HEX_HEIGHT * 0.75 * this.r + yOffset;
+            }
+            
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                
+                // Draw hexagon 
+                ctx.beginPath();
+                for (let i = 0; i < 6; i++) {
+                    const angle = (Math.PI / 3) * i + (Math.PI / 6); 
+                    const hx = HEX_RADIUS * Math.cos(angle);
+                    const hy = HEX_RADIUS * Math.sin(angle);
+                    if (i === 0) ctx.moveTo(hx, hy);
+                    else ctx.lineTo(hx, hy);
+                }
+                ctx.closePath();
+                
+                // Fill color based on type
+                switch(this.type) {
+                    case 'empty':
+                        ctx.fillStyle = '#fff';
+                        break;
+                    case 'wall':
+                        ctx.fillStyle = '#333';
+                        break;
+                    case 'start':
+                        ctx.fillStyle = '#4CAF50';
+                        break;
+                    case 'goal':
+                        ctx.fillStyle = '#f44336';
+                        break;
+                    case 'open':
+                        ctx.fillStyle = '#90cdf4';
+                        break;
+                    case 'closed':
+                        ctx.fillStyle = '#fbb6ce';
+                        break;
+                    case 'path':
+                        ctx.fillStyle = '#ffd700';
+                        break;
+                }
+                ctx.fill();
+                
+                ctx.strokeStyle = '#666';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Draw F, G, H values if explored
+                if (this.type === 'open' || this.type === 'closed' || this.type === 'path') {
+                    ctx.fillStyle = '#000';
+                    ctx.font = 'bold 10px Arial';
+                    ctx.textAlign = 'center';
+                    
+                    // F value (top)
+                    ctx.fillText('F:' + Math.round(this.f), 0, -10);
+                    
+                    // G value (bottom left)
+                    ctx.fillText('G:' + Math.round(this.g), -12, 10);
+                    
+                    // H value (bottom right)
+                    ctx.fillText('H:' + Math.round(this.h), 12, 10);
+                }
+                
+                ctx.restore();
+            }
+            
+            contains(mx, my) {
+                const dx = mx - this.x;
+                const dy = my - this.y;
+                return Math.sqrt(dx * dx + dy * dy) < HEX_RADIUS;
+            }
+        }
+        
+        // Initialize grid
+        function initGrid() {
+            hexGrid = [];
+            for (let r = 0; r < ROWS; r++) {
+                hexGrid[r] = [];
+                for (let q = 0; q < COLS; q++) {
+                    hexGrid[r][q] = new Hex(q, r);
+                }
+            }
+            startHex = null;
+            goalHex = null;
+            openList = [];
+            closedList = new Set();
+            pathFound = false;
+            drawGrid();
+        }
+        
+        // Draw entire grid
+        function drawGrid() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let r = 0; r < ROWS; r++) {
+                for (let q = 0; q < COLS; q++) {
+                    hexGrid[r][q].draw();
+                }
+            }
+        }
+        
+        // Get hex at mouse position
+        function getHexAt(mx, my) {
+            for (let r = 0; r < ROWS; r++) {
+                for (let q = 0; q < COLS; q++) {
+                    if (hexGrid[r][q].contains(mx, my)) {
+                        return hexGrid[r][q];
+                    }
+                }
+            }
+            return null;
+        }
+        
+        // Get neighbors of a hex
+        function getNeighbors(hex) {
+            const neighbors = [];
+            const directions = [
+                [1, 0], [1, -1], [0, -1],
+                [-1, 0], [-1, 1], [0, 1]
+            ];
+            
+            for (const [dq, dr] of directions) {
+                const nq = hex.q + dq;
+                const nr = hex.r + dr;
+                
+                if (nr >= 0 && nr < ROWS && nq >= 0 && nq < COLS) {
+                    const neighbor = hexGrid[nr][nq];
+                    if (neighbor.type !== 'wall') {
+                        neighbors.push(neighbor);
+                    }
+                }
+            }
+            
+            return neighbors;
+        }
+        
+        // Heuristic (Manhattan distance for hex grid)
+        function heuristic(hex1, hex2) {
+            return Math.abs(hex1.q - hex2.q) + Math.abs(hex1.r - hex2.r);
+        }
+        
+        // Initialize A* algorithm
+        function initAStar() {
+            if (!startHex || !goalHex) {
+                alert('Please set both start and goal!');
+                return false;
+            }
+            
+            // Reset all hexes
+            for (let r = 0; r < ROWS; r++) {
+                for (let q = 0; q < COLS; q++) {
+                    const hex = hexGrid[r][q];
+                    if (hex.type === 'open' || hex.type === 'closed' || hex.type === 'path') {
+                        hex.type = 'empty';
+                    }
+                    hex.g = Infinity;
+                    hex.h = 0;
+                    hex.f = Infinity;
+                    hex.parent = null;
+                }
+            }
+            
+            // Reset start and goal types
+            startHex.type = 'start';
+            goalHex.type = 'goal';
+            
+            openList = [];
+            closedList = new Set();
+            pathFound = false;
+            
+            // Initialize start hex
+            startHex.g = 0;
+            startHex.h = heuristic(startHex, goalHex);
+            startHex.f = startHex.g + startHex.h;
+            openList.push(startHex);
+            
+            return true;
+        }
+        
+        // Execute one step of A*
+        function nextStep() {
+            if (!startHex || !goalHex) {
+                alert('Please set both start and goal first!');
+                return;
+            }
+            
+            if (openList.length === 0 && closedList.size === 0) {
+                if (!initAStar()) return;
+            }
+            
+            if (pathFound) {
+                alert('Path already found!');
+                return;
+            }
+            
+            if (openList.length === 0) {
+                alert('No path exists!');
+                return;
+            }
+            
+            // Find hex with lowest f in open list
+            openList.sort((a, b) => a.f - b.f);
+            const current = openList.shift();
+            
+            // Move to closed list
+            closedList.add(current);
+            if (current !== startHex && current !== goalHex) {
+                current.type = 'closed';
+            }
+            
+            // Check if goal reached
+            if (current === goalHex) {
+                pathFound = true;
+                reconstructPath(current);
+                alert('Path found!');
+                return;
+            }
+            
+            // Check neighbors
+            const neighbors = getNeighbors(current);
+            
+            for (const neighbor of neighbors) {
+                if (closedList.has(neighbor)) continue;
+                
+                const tentativeG = current.g + 1;
+                
+                if (!openList.includes(neighbor)) {
+                    openList.push(neighbor);
+                    if (neighbor !== startHex && neighbor !== goalHex) {
+                        neighbor.type = 'open';
+                    }
+                } else if (tentativeG >= neighbor.g) {
+                    continue;
+                }
+                
+                neighbor.parent = current;
+                neighbor.g = tentativeG;
+                neighbor.h = heuristic(neighbor, goalHex);
+                neighbor.f = neighbor.g + neighbor.h;
+            }
+            
+            drawGrid();
+        }
+        
+        // Auto solve (run all steps)
+        async function autoSolve() {
+            if (!startHex || !goalHex) {
+                alert('Please set both start and goal first!');
+                return;
+            }
+            
+            if (openList.length === 0 && closedList.size === 0) {
+                if (!initAStar()) return;
+            }
+            
+            while (openList.length > 0 && !pathFound) {
+                nextStep();
+                await sleep(200);
+            }
+        }
+        
+        // Reconstruct path
+        function reconstructPath(endHex) {
+            let current = endHex;
+            while (current !== null) {
+                if (current !== startHex && current !== goalHex) {
+                    current.type = 'path';
+                }
+                current = current.parent;
+            }
+            drawGrid();
+        }
+        
+        // Reset grid
+        function reset() {
+            initGrid();
+        }
+        
+        // Sleep utility
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        
+        // Mouse click handler
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
+            
+            const hex = getHexAt(mx, my);
+            if (!hex) return;
+            
+            const mode = document.querySelector('input[name="mode"]:checked').value;
+            
+            if (mode === 'start') {
+                if (startHex) startHex.type = 'empty';
+                if (hex === goalHex) return;
+                startHex = hex;
+                hex.type = 'start';
+                openList = [];
+                closedList = new Set();
+                pathFound = false;
+            } else if (mode === 'goal') {
+                if (goalHex) goalHex.type = 'empty';
+                if (hex === startHex) return;
+                goalHex = hex;
+                hex.type = 'goal';
+                openList = [];
+                closedList = new Set();
+                pathFound = false;
+            } else if (mode === 'wall') {
+                if (hex === startHex || hex === goalHex) return;
+                hex.type = hex.type === 'wall' ? 'empty' : 'wall';
+            }
+            
+            drawGrid();
+        });
+        
+        // Initialize on load
+        initGrid();
+    </script>
+</body>
+</html>

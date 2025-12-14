@@ -2,6 +2,9 @@
 
 An interactive web-based visualizer for teaching A* pathfinding algorithms using hexagonal grids.
 
+## Video link
+https://drive.google.com/file/d/1Oq1GaD-OCJHumk0_AwmmqpE05qZDEIzF/view?usp=sharing
+
 ## 🎮 Overview
 
 This educational package helps students understand A* pathfinding through hands-on interaction and step-by-step visualization. 
